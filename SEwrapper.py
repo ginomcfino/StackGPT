@@ -24,6 +24,7 @@ openai.api_key = API_KEY
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+# suppress_callback_exceptions=True
 
 app.layout = html.Div(
     [
@@ -43,18 +44,35 @@ app.layout = html.Div(
         ),
         html.Div(
             style={
+                'text-align': 'center',
+            },
+            children = [
+                html.H3("Ask a question: "),
+            ]
+        ),
+        html.Div(
+            style={
                 "display": "flex",
                 "flex-direction": "row",
                 "justify-content": "center",
                 "align-items": "center",
             },
             children=[
-                html.H4("Ask a question: "),
+                # html.H4("Ask a question: "),
+                dcc.Dropdown(
+                    id='my-dropdown',
+                    options=[
+                        {'label': 'Option 1', 'value': 'OPT1'},
+                        {'label': 'Option 2', 'value': 'OPT2'},
+                        {'label': 'Option 3', 'value': 'OPT3'}
+                    ],
+                    style={'max-width': '120px', 'min-width': '100px'}
+                ),
                 dcc.Input(
                     id="input-box",
                     type="text",
                     placeholder="Type your question here...",
-                    style={"width": "50%", "overflow": "auto"},
+                    style={"width": "60%", "overflow": "auto"},
                 ),
                 html.Button("Send", id="button", n_clicks=0),
             ],
@@ -87,9 +105,12 @@ app.layout = html.Div(
 )
 def update_output(n_clicks, value):
     if n_clicks is not None and n_clicks > 0:
-        response = chat_with_gpt3_5_turbo(value)
-        print(response)
-        return response
+        if value and len(value) > 0:
+            response = chat_with_gpt3_5_turbo(value)
+            print(response)
+            return response
+        else:
+            return 'Please enter a question.'
     else:
         return 'response will be here'
 
