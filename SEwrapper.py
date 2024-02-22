@@ -54,12 +54,29 @@ app.layout = html.Div(
                     id="input-box",
                     type="text",
                     placeholder="Type your question here...",
-                    style={"width": "50%", 'overflow': 'auto'},
+                    style={"width": "50%", "overflow": "auto"},
                 ),
                 html.Button("Send", id="button", n_clicks=0),
             ],
         ),
-        html.Div(id="chat-output", children="Enter a message and press send"),
+        html.Div(
+            style={
+                "display": "flex",
+                "flex-direction": "column",
+                "justify-content": "center",
+                "align-items": "center",
+            },
+            children=[
+                dcc.Loading(
+                    id="loading-1",
+                    type="default",  # You can change this to "circle", "cube", etc.
+                    children=[
+                        dcc.Markdown(id="chat-output", loading_state={"is_loading": True}),
+                    ],
+                ),
+                
+            ],
+        ),
     ]
 )
 
@@ -73,6 +90,8 @@ def update_output(n_clicks, value):
         response = chat_with_gpt3_5_turbo(value)
         print(response)
         return response
+    else:
+        return 'response will be here'
 
 def chat_with_gpt3_5_turbo(user_input):
     """
