@@ -1,199 +1,61 @@
-'''
-Python Webapp for asking coding questions using ChatGPT,
-and sends answers to Stack Overflow if answer doesn't exist,
-using the StackExchange REST API.
-'''
-
-
 import dash
 from dash import Input, Output, State, dcc, html
 import dash_bootstrap_components as dbc
 import dash_daq as daq
-import openai
-import os
+import webbrowser
+import requests
+import json
 
+# Replace with your own StackExchange App credentials
+client_id = 'YOUR_CLIENT_ID'
+client_secret = 'YOUR_CLIENT_SECRET'
+redirect_uri = 'YOUR_REDIRECT_URI'
+scope = 'read_inbox,write_access,no_expiry'
 
-# Global variable
-# try:
-#     API_KEY = os.environ['OPENAI_API_KEY']
-#     # API_KEY = os.environ['Does not exist']
-# except:
-#     API_KEY = None
-# # print(f'APIKEY: {API_KEY}')
+app = dash.Dash(__name__)
 
-# openai.api_key = API_KEY
+app.layout = html.Div([
+    html.Button('Authenticate with StackExchange', id='auth-button'),
+    dcc.Location(id='url', refresh=False),
+    html.Div(id='output')
+])
 
-external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
+@app.callback(Output('output', 'children'),
+              [Input('auth-button', 'n_clicks')],
+              [Input('url', 'search')])
+def authenticate(n_clicks, search):
+    if n_clicks is None:
+        return ''
 
-app.layout = html.Div(
-    [
-        html.Div(
-            style={
-                "display": "flex",
-                "flex-direction": "column",
-                "justify-content": "center",
-                "align-items": "center",
-            },
-            children=[
-                html.H1("StackGPT Tool"),
-                html.P(
-                    "Ask a question and get an answer from ChatGPT. If answer still needed, ask Stack Overflow. (MVP version)"
-                ),
-            ],
-        ),
-        html.Div(
-            style={
-                "text-align": "center",
-            },
-            children=[
-                html.Button(
-                    "Await Connection",
-                    id="refresh-button",
-                    n_clicks=0,
-                    style={
-                        "color": "orange",
-                    },
-                ),
-                html.Div(id="refresh-button-note"),
-                html.Div(
-                    style={
-                        "display": "flex",
-                        "flex-direction": "row",
-                        "justify-content": "center",
-                        "align-items": "center",
-                    },
-                    children=[
-                        html.H3("Ask a question:"),
-                    ],
-                ),
-            ],
-        ),
-        html.Div(
-            style={
-                "display": "flex",
-                "flex-direction": "row",
-                "justify-content": "center",
-                "align-items": "center",
-            },
-            children=[
-                # dcc.Dropdown(
-                #     id="gpt-dropdown",
-                #     options=[
-                #         {"label": "Default (GPT-3.5-Turbo)", "value": "GPT-3.5-Turbo"},
-                #     ],
-                #     style={"max-width": "400px", "min-width": "200px"},
-                # ),
-                dcc.Input(
-                    id="input-box",
-                    type="text",
-                    placeholder="Type your question here...",
-                    style={"width": "60%", "overflow": "auto"},
-                ),
-                html.Button("Send", id="button", n_clicks=0),
-            ],
-        ),
-        html.Div(
-            style={
-                "display": "flex",
-                "flex-direction": "column",
-                "justify-content": "center",
-                "align-items": "center",
-            },
-            children=[
-                dcc.Loading(
-                    id="loading-1",
-                    type="default",  # You can change this to "circle", "cube", etc.
-                    children=[
-                        dcc.Markdown(
-                            id="chat-output", loading_state={"is_loading": True}
-                        ),
-                    ],
-                ),
-            ],
-        ),
-    ]
-)
+    # Generate the OAuth URL
+    url = f'https://stackoverflow.com/oauth/dialog?client_id={client_id}&scope={scope}&redirect_uri={redirect_uri}&state=dash'
 
-@app.callback(
-    Output("refresh-button", "style"),
-    Output("refresh-button", "children"),
-    Output("refresh-button-note", "children"),
-    Input("refresh-button", "n_clicks"),
-    State("input-box", "value"),
-)
-def refresh_connection(n_clicks, gpt_key):
-    if n_clicks is not None:
-        if openai.api_key is not None:
-            return {"color": "green"}, "Connected to GPT", None
-        else:
-            if gpt_key and len(gpt_key) > 0:
-                openai.api_key = gpt_key
-                # test connection:
-                try:
-                    models = openai.models.list()
-                    # models is not none, gpt connection established
-                    return {"color": "green"}, "Connected to GPT", None
-                except:
-                    return {"color": "red"}, "Not connected to GPT", "Invalid API key, please enter a valid API key in question box."
-            else:
-                try:
-                    openai.api_key = os.environ['OPENAI_API_KEY']
-                    options = openai.models.list() # test connection
-                    return {"color": "green"}, "Connected to GPT", None
-                except:
-                    return {"color": "red"}, "Not connected to GPT", "Please enter API key in question box"
-            # try:
-            #     openai.api_key = os.environ['OPENAI_API_KEY'] #TODO: make this user input box
-            #     # options = get_avail_models()
-            #     return {"color": "green"}, "Connected to GPT", None
-            # except:
-            #     return {"color": "red"}, "Not connected to GPT", "Please enter API key in question box"
-    else:
-        return {"color": "orange"}, "Await connction to GPT", "Please enter API key in question box"
-    
+    # Open the OAuth URL in a new window
+    webbrowser.open(url, new=1)
 
+    # Wait for the user to authenticate and be redirected to the redirect_uri
+    # This is a placeholder for now, as Dash doesn't support waiting for a user action
+    # You can use a callback with a delay to periodically check if the user has been redirected
+    # Or you can use a different approach to handle the OAuth flow, such as a Flask app
+    # or a separate web server to handle the OAuth redirect and obtain the access token
+    # For example, you can use the requests_oauthlib library to handle the OAuth flow
+    # Here's a simple example:
+    # https://requests-oauthlib.readthedocs.io/en/latest/oauth2_workflow.html#implicit-grant-flow
+    # You can also refer to the Dash OAuth documentation:
+    # https://dash.plotly.com/authentication
+    # Note that the implicit OAuth flow is not recommended for web applications,
+    # as it is less secure than the authorization code flow.
+    # It's recommended to use the authorization code flow instead.
 
-@app.callback(
-    Output('chat-output', 'children'),
-    Input('button', 'n_clicks'),
-    State('input-box', 'value')
-)
-def update_output(n_clicks, value):
-    if n_clicks is not None and n_clicks > 0:
-        if value and len(value) > 0:
-            response = chat_with_gpt(value)
-            return response
-        else:
-            return 'Please enter a question.'
-    else:
-        return 'response will be here'
+    # Once you have the access token, you can use it to make authenticated requests to the StackExchange API
+    # For example, you can use the requests library to make authenticated requests
+    # Here's a simple example:
+    # access_token = 'YOUR_ACCESS_TOKEN'
+    # headers = {'Authorization': f'Bearer {access_token}'}
+    # response = requests.get('https://api.stackexchange.com/2.2/me', headers=headers)
+    # print(response.json())
 
-def chat_with_gpt(user_input, model_name="gpt-3.5-turbo"):
-    """
-    Sends a message to the GPT model and returns the model's response.
-    """
-    completion = openai.chat.completions.create(
-        model=model_name,
-        messages=[
-            {
-                "role": "user",
-                "content": user_input,
-            },
-        ],
-    )
-    return completion.choices[0].message.content
-
-# def get_avail_models():
-#     """
-#     Returns a list of available models from OpenAI.
-#     """
-#     models = openai.models.list()
-#     options = []
-#     for m in models:
-#         option = {"label": m.id, "value": m.id}
-#         options.append(option)
-#     return options
+    return 'Authenticating...'
 
 if __name__ == '__main__':
     app.run_server(debug=True)
